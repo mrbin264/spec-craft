@@ -20,7 +20,7 @@ interface Spec {
 export default function SpecPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [spec, setSpec] = useState<Spec | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,21 +28,50 @@ export default function SpecPage() {
   const [sidebarTab, setSidebarTab] = useState<'versions' | 'workflow'>('versions');
   const [compareVersions, setCompareVersions] = useState<{ rev1: number; rev2: number } | null>(null);
 
+  // Get specId from params safely
+  const specId = typeof params.id === 'string' ? params.id : null;
+
   useEffect(() => {
+    // Wait for auth to load before checking user
+    if (authLoading) {
+      return;
+    }
+    
     if (!user) {
       router.push('/login');
       return;
     }
 
+    if (!specId) {
+      return;
+    }
+
     const fetchSpec = async () => {
       try {
-        const response = await fetch(`/api/specs/${params.id}`);
+        const token = localStorage.getItem('auth_token');
+        console.log('Fetching spec:', specId);
+        const response = await fetch(`/api/specs/${specId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        console.log('Response status:', response.status);
         if (!response.ok) {
-          throw new Error('Failed to fetch spec');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Fetch failed:', response.status, errorData);
+          throw new Error(errorData.error || 'Failed to fetch spec');
         }
         const data = await response.json();
-        setSpec(data.spec);
+        console.log('Spec data:', data);
+        // Normalize API response: convert 'id' to '_id' if needed
+        const spec = data.spec;
+        if (spec.id && !spec._id) {
+          spec._id = spec.id;
+        }
+        setSpec(spec);
       } catch (err) {
+        console.error('Error fetching spec:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
@@ -50,26 +79,38 @@ export default function SpecPage() {
     };
 
     fetchSpec();
-  }, [params.id, user, router]);
+  }, [specId, user, router, authLoading]);
 
   const handleSave = async (content: string, metadata: SpecMetadata) => {
+    if (!specId) return;
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/specs/${params.id}`, {
+      const token = localStorage.getItem('auth_token');
+      console.log('Saving spec:', specId);
+      console.log('Token exists:', !!token);
+      const response = await fetch(`/api/specs/${specId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ content, metadata }),
       });
 
+      console.log('Save response status:', response.status);
       if (!response.ok) {
-        throw new Error('Failed to save spec');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Save failed:', response.status, errorData);
+        throw new Error(errorData.error?.message || 'Failed to save spec');
       }
 
       const data = await response.json();
-      setSpec(data.spec);
+      console.log('Save response data:', data);
+      // Normalize API response: convert 'id' to '_id' if needed
+      const spec = data.spec;
+      if (spec.id && !spec._id) {
+        spec._id = spec.id;
+      }
+      setSpec(spec);
     } catch (err) {
       console.error('Save error:', err);
       throw err;
@@ -77,13 +118,14 @@ export default function SpecPage() {
   };
 
   const handleTransition = async (newStage: WorkflowStage) => {
+    if (!specId) return;
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/specs/${params.id}/transition`, {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/specs/${specId}/transition`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ toStage: newStage }),
       });
@@ -106,9 +148,16 @@ export default function SpecPage() {
   };
 
   const handleRestore = async (version: number) => {
+    if (!specId) return;
     try {
       // Fetch the revision content
-      const response = await fetch(`/api/specs/${params.id}/revisions`);
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/specs/${specId}/revisions`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch revisions');
       }
@@ -173,7 +222,7 @@ export default function SpecPage() {
           <WorkflowStatusBadge status={spec.metadata.status} />
         </div>
         <div className="flex items-center gap-3">
-          {user && (
+          {user && spec && spec._id && (
             <WorkflowTransitionButton
               specId={spec._id}
               currentStage={spec.metadata.status}
@@ -197,16 +246,18 @@ export default function SpecPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Editor */}
         <div className={`${showSidebar ? 'w-2/3' : 'w-full'} transition-all duration-300`}>
-          <SpecEditor
-            specId={spec._id}
-            initialContent={spec.content}
-            initialMetadata={spec.metadata}
-            onSave={handleSave}
-          />
+          {spec && spec._id && (
+            <SpecEditor
+              specId={spec._id}
+              initialContent={spec.content}
+              initialMetadata={spec.metadata}
+              onSave={handleSave}
+            />
+          )}
         </div>
 
         {/* History Sidebar */}
-        {showSidebar && (
+        {showSidebar && spec && spec._id && (
           <div className="w-1/3 border-l border-gray-200 bg-white overflow-hidden flex flex-col">
             {/* Tabs */}
             <div className="flex border-b border-gray-200 bg-gray-50">
@@ -251,7 +302,7 @@ export default function SpecPage() {
       </div>
 
       {/* Diff Viewer Modal */}
-      {compareVersions && (
+      {compareVersions && spec && spec._id && (
         <DiffViewer
           specId={spec._id}
           rev1={compareVersions.rev1}

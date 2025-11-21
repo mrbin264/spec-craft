@@ -37,8 +37,9 @@ export function BreadcrumbNavigation() {
         label = 'Editor Demo';
       } else if (label.length === 24) {
         // Likely a MongoDB ObjectId - fetch spec title
+        const specId = segments[i];
         label = 'Loading...';
-        fetchSpecTitle(label, currentPath);
+        fetchSpecTitle(specId, currentPath);
       }
       
       items.push({ label, href: currentPath });
@@ -49,7 +50,13 @@ export function BreadcrumbNavigation() {
   
   async function fetchSpecTitle(specId: string, path: string) {
     try {
-      const response = await fetch(`/api/specs/${specId}`);
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/specs/${specId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setBreadcrumbs((prev) =>

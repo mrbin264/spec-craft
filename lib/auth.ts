@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { env } from './env';
 import { SessionPayload } from '@/types/auth';
 
-const JWT_SECRET = env.nextAuth.secret || 'development-secret-key';
+const JWT_SECRET = env.jwt.secret || 'development-secret-key';
 const TOKEN_EXPIRY = '24h';
 
 /**
@@ -42,6 +42,8 @@ export function verifyToken(token: string): SessionPayload | null {
     const decoded = jwt.verify(token, JWT_SECRET) as SessionPayload;
     return decoded;
   } catch (error) {
+    console.error('[AUTH ERROR] Token verification failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('[AUTH ERROR] JWT_SECRET exists:', !!JWT_SECRET);
     return null;
   }
 }
@@ -50,8 +52,12 @@ export function verifyToken(token: string): SessionPayload | null {
  * Extract token from Authorization header
  */
 export function extractTokenFromHeader(authHeader: string | null): string | null {
+  console.log('[AUTH] Raw auth header:', authHeader);
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[AUTH] Invalid auth header format');
     return null;
   }
-  return authHeader.substring(7);
+  const token = authHeader.substring(7);
+  console.log('[AUTH] Extracted token:', token ? `${token.substring(0, 20)}...` : 'EMPTY');
+  return token;
 }

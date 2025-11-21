@@ -33,7 +33,13 @@ export function FileList({ specId, refreshTrigger }: FileListProps) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/specs/${specId}/files`);
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/specs/${specId}/files`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to load files');
       }

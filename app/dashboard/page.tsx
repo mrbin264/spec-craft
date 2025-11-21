@@ -84,7 +84,13 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/specs');
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/specs', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch specs');
@@ -111,10 +117,12 @@ export default function DashboardPage() {
       const template = templates.find((t) => t.id === selectedTemplate);
       if (!template) return;
       
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/specs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           templateId: selectedTemplate,

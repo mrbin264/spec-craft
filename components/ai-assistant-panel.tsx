@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AIAction } from '@/lib/ai-client';
 
 interface AIAssistantPanelProps {
@@ -86,10 +86,12 @@ export function AIAssistantPanel({
     setGeneratedText(null);
 
     try {
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           action,
@@ -275,14 +277,25 @@ function QuotaDisplay() {
     remaining: number;
   } | null>(null);
 
-  useState(() => {
-    fetch('/api/ai/quota')
-      .then((res) => res.json())
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    fetch('/api/ai/quota', {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Failed to fetch quota');
+      })
       .then((data) => setQuota(data))
-      .catch(() => {});
-  });
+      .catch(() => {
+        // Silently fail - quota display is optional
+      });
+  }, []);
 
-  if (!quota) {
+  if (!quota || typeof quota.used !== 'number' || typeof quota.dailyLimit !== 'number') {
     return null;
   }
 

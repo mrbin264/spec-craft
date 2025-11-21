@@ -31,13 +31,16 @@ export class RevisionRepository extends BaseRepository<Revision> {
    */
   async findBySpecId(specId: string, limit?: number): Promise<Revision[]> {
     const collection = await this.getCollection();
-    let query = collection.find({ specId } as Filter<Revision>).sort({ version: -1 });
+    const revisions = await collection.find({ specId } as Filter<Revision>).toArray();
+    
+    // Sort in memory (Cosmos DB indexing limitation)
+    revisions.sort((a, b) => b.version - a.version);
     
     if (limit) {
-      query = query.limit(limit);
+      return revisions.slice(0, limit);
     }
     
-    return query.toArray();
+    return revisions;
   }
   
   /**
@@ -54,11 +57,13 @@ export class RevisionRepository extends BaseRepository<Revision> {
     const collection = await this.getCollection();
     const revisions = await collection
       .find({ specId } as Filter<Revision>)
-      .sort({ version: -1 })
-      .limit(1)
       .toArray();
     
-    return revisions[0] || null;
+    // Sort in memory (Cosmos DB indexing limitation)
+    if (revisions.length === 0) return null;
+    revisions.sort((a, b) => b.version - a.version);
+    
+    return revisions[0];
   }
   
   /**

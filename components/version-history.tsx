@@ -34,7 +34,13 @@ export function VersionHistory({ specId, onCompare, onRestore }: VersionHistoryP
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/specs/${specId}/revisions`);
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/specs/${specId}/revisions`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch revisions');

@@ -1,9 +1,9 @@
 // Environment variable configuration and validation
 
 export const env = {
-  // CosmosDB
+  // CosmosDB (supports both MONGODB_URI and COSMOSDB_CONNECTION_STRING)
   cosmosdb: {
-    connectionString: process.env.COSMOSDB_CONNECTION_STRING || '',
+    connectionString: process.env.COSMOSDB_CONNECTION_STRING || process.env.MONGODB_URI || '',
     databaseName: process.env.COSMOSDB_DATABASE_NAME || 'speccraft',
   },
   
@@ -31,6 +31,11 @@ export const env = {
   nextAuth: {
     secret: process.env.NEXTAUTH_SECRET || '',
     url: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+  },
+  
+  // JWT
+  jwt: {
+    secret: process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '',
   },
   
   // Application

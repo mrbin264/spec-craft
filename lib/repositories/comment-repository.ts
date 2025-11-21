@@ -33,10 +33,13 @@ export class CommentRepository extends BaseRepository<Comment> {
    */
   async findBySpecId(specId: string): Promise<Comment[]> {
     const collection = await this.getCollection();
-    return collection
+    const comments = await collection
       .find({ specId, parentCommentId: { $exists: false } } as Filter<Comment>)
-      .sort({ timestamp: -1 })
       .toArray();
+    // Sort in memory instead of in database (Cosmos DB indexing limitation)
+    return comments.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
   }
   
   /**
@@ -44,10 +47,13 @@ export class CommentRepository extends BaseRepository<Comment> {
    */
   async findAllBySpecId(specId: string): Promise<Comment[]> {
     const collection = await this.getCollection();
-    return collection
+    const comments = await collection
       .find({ specId } as Filter<Comment>)
-      .sort({ timestamp: 1 })
       .toArray();
+    // Sort in memory instead of in database (Cosmos DB indexing limitation)
+    return comments.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
   }
   
   /**
@@ -55,10 +61,13 @@ export class CommentRepository extends BaseRepository<Comment> {
    */
   async findReplies(parentCommentId: string): Promise<Comment[]> {
     const collection = await this.getCollection();
-    return collection
+    const replies = await collection
       .find({ parentCommentId } as Filter<Comment>)
-      .sort({ timestamp: 1 })
       .toArray();
+    // Sort in memory instead of in database (Cosmos DB indexing limitation)
+    return replies.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
   }
   
   /**

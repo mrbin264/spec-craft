@@ -74,12 +74,17 @@ export async function verifyAuth(request: NextRequest): Promise<{
   authenticated: boolean;
   user: SessionPayload | null;
 }> {
+  const authHeader = request.headers.get('authorization');
+  console.log('[AUTH DEBUG] Authorization header:', authHeader ? 'Present' : 'Missing');
+  
   const session = getSession(request);
   
   if (!session) {
+    console.log('[AUTH DEBUG] No valid session found');
     return { authenticated: false, user: null };
   }
   
+  console.log('[AUTH DEBUG] User authenticated:', session.email);
   return { authenticated: true, user: session };
 }
 

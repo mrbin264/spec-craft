@@ -62,61 +62,9 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Webpack optimizations
-  webpack: (config, { isServer }) => {
-    // Optimize bundle size
-    if (!isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            // Separate vendor chunks for better caching
-            default: false,
-            vendors: false,
-            // Monaco Editor in its own chunk
-            monaco: {
-              test: /[\\/]node_modules[\\/](@monaco-editor|monaco-editor)[\\/]/,
-              name: 'monaco',
-              priority: 40,
-              reuseExistingChunk: true,
-            },
-            // React Flow in its own chunk
-            reactflow: {
-              test: /[\\/]node_modules[\\/](@xyflow)[\\/]/,
-              name: 'reactflow',
-              priority: 35,
-              reuseExistingChunk: true,
-            },
-            // Mermaid in its own chunk
-            mermaid: {
-              test: /[\\/]node_modules[\\/](mermaid)[\\/]/,
-              name: 'mermaid',
-              priority: 30,
-              reuseExistingChunk: true,
-            },
-            // React and core libraries
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-              name: 'react',
-              priority: 25,
-              reuseExistingChunk: true,
-            },
-            // Other vendor libraries
-            lib: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'lib',
-              priority: 10,
-              reuseExistingChunk: true,
-              minChunks: 2,
-            },
-          },
-        },
-      };
-    }
-
-    return config;
-  },
+  // Note: Turbopack is enabled by default in Next.js 16 for development
+  // Webpack configuration has been removed as Turbopack handles bundling
+  // For production builds, Next.js still uses webpack with default optimizations
 };
 
 export default withBundleAnalyzer(nextConfig);

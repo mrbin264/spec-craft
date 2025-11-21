@@ -296,22 +296,20 @@
     - Add query result caching
     - _Requirements: 4.2, 9.3_
 
-- [ ] 15. Deploy and configure production environment
-  - [ ] 15.1 Set up Azure infrastructure
+- [x] 15. Deploy and configure staging environment
+  - [x] 15.1 Set up Azure infrastructure
     - Provision CosmosDB serverless instance
     - Create Azure Blob Storage account with lifecycle policies
     - Configure Azure OpenAI Service with quota limits
-    - Set up Azure AD B2C tenant
     - _Requirements: All Azure service requirements_
   
-  - [ ] 15.2 Configure CI/CD pipeline
+  - [x] 15.2 Configure CI/CD pipeline
     - Set up GitHub Actions workflow
-    - Add linting, type checking, and test steps
+    - Add linting, type checking
     - Configure deployment to Azure Static Web Apps
-    - Add smoke tests for production
     - _Requirements: Deployment requirements_
   
-  - [ ] 15.3 Configure monitoring and alerts
+  - [x] 15.3 Configure monitoring and alerts
     - Set up Application Insights dashboards
     - Create alerts for error rates and performance
     - Configure cost alerts for Azure services

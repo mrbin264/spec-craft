@@ -13,7 +13,7 @@ const clientOptions: MongoClientOptions = {
   maxIdleTimeMS: 30000,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
-  retryWrites: true,
+  retryWrites: false, // CosmosDB MongoDB API doesn't support retryable writes
   retryReads: true,
 };
 

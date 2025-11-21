@@ -5,6 +5,21 @@ import type { Spec, SpecMetadata } from '@/types/spec';
 
 const API_BASE = '/api';
 
+// Helper to get auth headers
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem('auth_token');
+  console.log('[API] Auth token:', token ? `${token.substring(0, 20)}...` : 'MISSING');
+  if (!token) {
+    console.warn('[API] No auth token found in localStorage');
+  }
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  console.log('[API] Headers:', headers);
+  return headers;
+}
+
 // Query keys
 export const specKeys = {
   all: ['specs'] as const,
@@ -21,7 +36,9 @@ export function useSpec(id: string) {
   return useQuery({
     queryKey: specKeys.detail(id),
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/specs/${id}`);
+      const res = await fetch(`${API_BASE}/specs/${id}`, {
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error('Failed to fetch spec');
       return res.json() as Promise<{ spec: Spec; permissions: any }>;
     },
@@ -35,7 +52,9 @@ export function useSpecs(filters?: Record<string, any>) {
     queryKey: specKeys.list(filters),
     queryFn: async () => {
       const params = new URLSearchParams(filters);
-      const res = await fetch(`${API_BASE}/specs?${params}`);
+      const res = await fetch(`${API_BASE}/specs?${params}`, {
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error('Failed to fetch specs');
       return res.json() as Promise<{ specs: Spec[] }>;
     },
@@ -51,7 +70,7 @@ export function useUpdateSpec(id: string) {
     mutationFn: async (data: { content: string; metadata: SpecMetadata }) => {
       const res = await fetch(`${API_BASE}/specs/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error('Failed to update spec');
@@ -78,7 +97,7 @@ export function useCreateSpec() {
     }) => {
       const res = await fetch(`${API_BASE}/specs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error('Failed to create spec');
@@ -95,7 +114,9 @@ export function useRevisions(specId: string) {
   return useQuery({
     queryKey: specKeys.revisions(specId),
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/specs/${specId}/revisions`);
+      const res = await fetch(`${API_BASE}/specs/${specId}/revisions`, {
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error('Failed to fetch revisions');
       return res.json();
     },
@@ -108,7 +129,9 @@ export function useComments(specId: string) {
   return useQuery({
     queryKey: specKeys.comments(specId),
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/specs/${specId}/comments`);
+      const res = await fetch(`${API_BASE}/specs/${specId}/comments`, {
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error('Failed to fetch comments');
       return res.json();
     },
